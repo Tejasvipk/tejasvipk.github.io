@@ -438,9 +438,21 @@
     });
   }
 
-  var ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
+  var ANTHROPIC_API_KEY = sessionStorage.getItem('anthropic_key') || '';
+
+  function checkKey() {
+    if (!ANTHROPIC_API_KEY) {
+      var key = prompt('Enter your Anthropic API key to enable AI suggestions:\n(This is only stored in your browser session, never on GitHub)');
+      if (key) {
+        ANTHROPIC_API_KEY = key.trim();
+        sessionStorage.setItem('anthropic_key', ANTHROPIC_API_KEY);
+      }
+    }
+  }
 
   async function regenerate() {
+    checkKey();
+    if (!ANTHROPIC_API_KEY) return;
     var btn = document.querySelector('.btn-ghost');
     btn.textContent = 'AI is thinking...';
     btn.disabled = true;
