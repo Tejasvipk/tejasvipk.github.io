@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dine In Together</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --teal:#1D9E75; --teal-light:#E1F5EE; --teal-dark:#085041;
+  --purple-light:#EEEDFE; --purple-dark:#3C3489;
+  --coral-light:#FAECE7; --coral-dark:#712B13;
+  --green-light:#EAF3DE; --green-dark:#27500A;
+  --amber-light:#FAEEDA; --amber-dark:#633806;
+  --blue-light:#E6F1FB; --blue-dark:#0C447C;
+  --bg:#fff; --bg2:#f6f6f4; --bg3:#efefec;
+  --text:#1a1a18; --text2:#6b6b67; --text3:#9a9a96;
+  --border:rgba(0,0,0,0.1); --border2:rgba(0,0,0,0.18);
+  --radius:14px; --radius-sm:8px; --radius-pill:999px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --teal:#1D9E75; --teal-light:#085041; --teal-dark:#9FE1CB;
+  --purple-light:#3C3489; --purple-dark:#CECBF6;
+  --coral-light:#712B13; --coral-dark:#F5C4B3;
+  --green-light:#27500A; --green-dark:#C0DD97;
+  --amber-light:#633806; --amber-dark:#FAC775;
+  --blue-light:#0C447C; --blue-dark:#B5D4F4;
+  --bg:#1c1c1a; --bg2:#252523; --bg3:#2e2e2b;
+  --text:#f0efe8; --text2:#9a9a96; --text3:#6b6b67;
+  --border:rgba(255,255,255,0.1); --border2:rgba(255,255,255,0.18);
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 16px 60px;}
+.app-header{width:100%;max-width:440px;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+h1.app-title{font-size:24px;font-weight:700;color:var(--teal);}
+.circle-switcher{display:flex;align-items:center;gap:6px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-pill);padding:5px 12px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text2);}
+.circle-switcher:hover{background:var(--bg3);}
+.app-tagline{font-size:13px;color:var(--text2);margin-bottom:20px;width:100%;max-width:440px;}
+.tab-bar{display:flex;gap:4px;background:var(--bg2);border-radius:var(--radius-pill);padding:4px;margin-bottom:18px;width:100%;max-width:440px;overflow-x:auto;}
+.tab{padding:7px 13px;border-radius:var(--radius-pill);font-size:12px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
+.tab.active{background:var(--teal);color:#fff;}
+.screen{display:none;width:100%;max-width:440px;}
+.screen.active{display:block;}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+.card-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.card-sub{font-size:12px;color:var(--text2);margin-bottom:12px;}
+.section-label{font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+.avatar-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.av-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+.avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;transition:transform 0.1s;}
+.avatar:hover{transform:scale(1.06);}
+.av-name{font-size:10px;color:var(--text2);}
+.av-online{width:8px;height:8px;background:var(--teal);border-radius:50%;margin-top:-10px;margin-left:30px;border:2px solid var(--bg);}
+.suggest-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:13px 14px;margin-bottom:10px;cursor:pointer;transition:border-color 0.15s,transform 0.1s;}
+.suggest-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.suggest-card.selected{border:2px solid var(--teal);}
+.suggest-card.top-voted{border:2px solid var(--teal);background:var(--teal-light);}
+.sc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;}
+.sc-name{font-size:14px;font-weight:600;color:var(--text);}
+.sc-meta{font-size:11px;color:var(--text2);margin-top:2px;}
+.sc-vote-badge{font-size:11px;padding:3px 10px;border-radius:var(--radius-pill);background:var(--bg2);color:var(--text2);white-space:nowrap;font-weight:500;transition:all 0.2s;}
+.suggest-card.selected .sc-vote-badge,.suggest-card.top-voted .sc-vote-badge{background:var(--teal);color:#fff;}
+.tag-row{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0;}
+.tag{font-size:10px;padding:2px 8px;border-radius:var(--radius-pill);}
+.tag-teal{background:var(--teal-light);color:var(--teal-dark);}
+.tag-purple{background:var(--purple-light);color:var(--purple-dark);}
+.tag-amber{background:var(--amber-light);color:var(--amber-dark);}
+.tag-blue{background:var(--blue-light);color:var(--blue-dark);}
+.tag-gray{background:var(--bg2);color:var(--text2);}
+.voter-row{display:flex;gap:4px;align-items:center;margin-top:7px;}
+.voter-chip{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;}
+.no-votes{font-size:10px;color:var(--text3);}
+.btn{width:100%;padding:12px;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity 0.15s,transform 0.1s;}
+.btn:active{transform:scale(0.98);}
+.btn-primary{background:var(--teal);color:#fff;margin-top:6px;}
+.btn-primary:hover{opacity:0.9;}
+.btn-ghost{background:transparent;color:var(--text2);border:0.5px solid var(--border2);margin-top:8px;}
+.btn-ghost:hover{background:var(--bg2);}
+.ai-banner{background:var(--teal-light);border-radius:var(--radius);padding:11px 13px;margin-bottom:12px;display:flex;align-items:flex-start;gap:9px;}
+.ai-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.ai-text{font-size:12px;color:var(--teal-dark);line-height:1.5;}
+.pref-block{margin-bottom:18px;}
+.chip-row{display:flex;gap:5px;flex-wrap:wrap;}
+.chip{font-size:11px;padding:4px 12px;border-radius:var(--radius-pill);border:0.5px solid var(--border2);color:var(--text2);cursor:pointer;transition:all 0.15s;background:var(--bg);}
+.chip.on{background:var(--teal-light);color:var(--teal-dark);border-color:var(--teal);}
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.stat-card{background:var(--bg2);border-radius:var(--radius-sm);padding:10px 12px;}
+.stat-label{font-size:10px;color:var(--text3);margin-bottom:3px;}
+.stat-val{font-size:15px;font-weight:600;color:var(--text);}
+.member-selector{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;}
+.member-btn{padding:5px 13px;border-radius:var(--radius-pill);font-size:11px;font-weight:500;cursor:pointer;border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);white-space:nowrap;transition:all 0.15s;flex-shrink:0;}
+.member-btn.active{background:var(--teal);color:#fff;border-color:var(--teal);}
+.confirm-highlight{background:var(--teal-light);border-radius:var(--radius);padding:13px 15px;margin-bottom:12px;}
+.confirm-winner{font-size:10px;font-weight:600;color:var(--teal-dark);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;}
+.confirm-rest{font-size:17px;font-weight:700;color:var(--teal-dark);margin-bottom:2px;}
+.confirm-eta{font-size:12px;color:var(--teal-dark);opacity:0.8;}
+.order-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border);}
+.order-item:last-child{border-bottom:none;}
+.oi-left{display:flex;align-items:center;gap:9px;}
+.oi-name{font-size:13px;font-weight:500;color:var(--text);}
+.oi-dish{font-size:11px;color:var(--text2);}
+.oi-price{font-size:12px;color:var(--text2);}
+.ai-predicted{font-size:9px;padding:2px 6px;border-radius:var(--radius-pill);background:var(--amber-light);color:var(--amber-dark);font-weight:500;margin-left:5px;}
+.split-row{display:flex;justify-content:space-between;padding:8px 0 0;}
+.split-label{font-size:13px;color:var(--text2);}
+.split-val{font-size:14px;font-weight:600;color:var(--text);}
+.predicting-banner{background:var(--amber-light);border-radius:var(--radius);padding:10px 13px;margin-bottom:11px;font-size:12px;color:var(--amber-dark);display:none;}
+.predicting-banner.show{display:block;}
+.history-row{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-bottom:0.5px solid var(--border);}
+.history-row:last-child{border-bottom:none;}
+.hist-name{font-size:13px;color:var(--text);font-weight:500;}
+.hist-date{font-size:10px;color:var(--text3);margin-top:2px;}
+.stars{color:var(--teal);font-size:11px;}
+input[type="text"],input[type="email"]{width:100%;padding:9px 12px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:14px;margin-bottom:9px;outline:none;}
+input[type="text"]:focus,input[type="email"]:focus{border-color:var(--teal);}
+label.field-label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px;}
+.meal-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.meal-btn{padding:10px 6px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;text-align:center;transition:all 0.15s;}
+.meal-btn.active{background:var(--teal-light);color:var(--teal-dark);border-color:var(--teal);}
+.meal-emoji{font-size:18px;display:block;margin-bottom:3px;}
+.payment-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.pay-btn{padding:12px 8px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--bg);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;text-align:center;transition:all 0.15s;line-height:1.6;}
+.pay-btn.active{background:var(--teal-light);color:var(--teal-dark);border-color:var(--teal);}
+.fav-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:13px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.fav-left{display:flex;align-items:center;gap:10px;}
+.fav-dish{font-size:13px;font-weight:500;color:var(--text);}
+.fav-sub{font-size:11px;color:var(--text2);}
+.fav-order-btn{font-size:11px;padding:5px 12px;border-radius:var(--radius-pill);background:var(--teal);color:#fff;border:none;cursor:pointer;font-weight:500;white-space:nowrap;}
+.ai-suggest-card{background:var(--bg);border:0.5px solid var(--amber-dark);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;transition:all 0.3s;}
+.ai-sug-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.ai-sug-label{font-size:10px;font-weight:600;color:var(--amber-dark);text-transform:uppercase;letter-spacing:0.06em;}
+.ai-sug-dish{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;}
+.ai-sug-reason{font-size:11px;color:var(--text2);}
+.ai-sug-actions{display:flex;gap:6px;margin-top:8px;}
+.sug-approve{flex:1;padding:6px;border-radius:var(--radius-sm);background:var(--teal);color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:500;}
+.sug-skip{flex:1;padding:6px;border-radius:var(--radius-sm);background:var(--bg2);color:var(--text2);border:0.5px solid var(--border2);cursor:pointer;font-size:12px;}
+.circle-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:13px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color 0.15s;}
+.circle-card:hover{border-color:var(--border2);}
+.circle-card.active-circle{border:2px solid var(--teal);}
+.circle-name{font-size:14px;font-weight:600;color:var(--text);}
+.circle-meta{font-size:11px;color:var(--text2);margin-top:2px;}
+.circle-check{width:20px;height:20px;border-radius:50%;background:var(--teal);display:none;align-items:center;justify-content:center;color:#fff;font-size:11px;flex-shrink:0;}
+.circle-card.active-circle .circle-check{display:flex;}
+.invite-card{background:var(--bg);border:1.5px solid var(--amber-dark);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+.invite-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.invite-privacy{font-size:12px;color:var(--text2);background:var(--amber-light);border-radius:var(--radius-sm);padding:8px 10px;margin:8px 0;line-height:1.5;}
+.location-row{display:flex;gap:8px;align-items:center;margin-bottom:12px;}
+.location-row input{margin-bottom:0;flex:1;}
+.loc-btn{padding:9px 14px;border-radius:var(--radius-sm);background:var(--teal-light);color:var(--teal-dark);border:0.5px solid var(--teal);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap;}
+.match-score{font-size:11px;font-weight:600;color:var(--teal);margin-left:5px;}
+.circle-dropdown{position:absolute;top:44px;right:0;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);min-width:200px;z-index:100;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.12);}
+.circle-dropdown.hidden{display:none;}
+.dropdown-item{padding:11px 14px;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border);}
+.dropdown-item:last-child{border-bottom:none;}
+.dropdown-item:hover{background:var(--bg2);}
+.dropdown-item.active-item{color:var(--teal);}
+.dropdown-item .dd-meta{font-size:10px;color:var(--text3);font-weight:400;margin-top:1px;}
+.dropdown-item .dd-check{color:var(--teal);font-size:12px;}
+.dropdown-new{padding:11px 14px;font-size:13px;font-weight:500;color:var(--teal);cursor:pointer;display:flex;align-items:center;gap:8px;background:var(--teal-light);}
+.dropdown-new:hover{opacity:0.85;}
+.app-header-wrap{position:relative;width:100%;max-width:440px;}
+</style>
+</head>
+<body>
+
+<div class="app-header-wrap">
+  <div class="app-header">
+    <h1 class="app-title">Dine In Together</h1>
+    <div class="circle-switcher" onclick="toggleDropdown(event)">
+      <span id="active-circle-name">Family Circle</span>
+      <span id="dd-arrow" style="font-size:10px;margin-left:2px;">&#9660;</span>
+    </div>
+  </div>
+  <div class="circle-dropdown hidden" id="circle-dropdown">
+    <div class="dropdown-item active-item" onclick="switchCircleDropdown(this,'Family Circle','4 members',14)">
+      <div><div>Family Circle</div><div class="dd-meta">4 members &bull; 14 orders</div></div>
+      <span class="dd-check">&#10003;</span>
+    </div>
+    <div class="dropdown-item" onclick="switchCircleDropdown(this,'Work Crew','3 members',5)">
+      <div><div>Work Crew</div><div class="dd-meta">3 members &bull; 5 orders</div></div>
+      <span class="dd-check" style="display:none">&#10003;</span>
+    </div>
+    <div class="dropdown-item" onclick="switchCircleDropdown(this,'Weekend Friends','6 members',8)">
+      <div><div>Weekend Friends</div><div class="dd-meta">6 members &bull; 8 orders</div></div>
+      <span class="dd-check" style="display:none">&#10003;</span>
+    </div>
+    <div class="dropdown-new" id="dd-new-circle" onclick="openCreateCircle()">
+      <span style="font-size:16px;">&#43;</span> Create new circle
+    </div>
+  </div>
+</div>
+<p class="app-tagline" id="app-tagline">4 members &bull; Friday night</p>
+
+<div class="tab-bar">
+  <button class="tab active" onclick="showTab('tonight')">Tonight</button>
+  <button class="tab" onclick="showTab('prefs')">Preferences</button>
+  <button class="tab" onclick="showTab('favourites')">Favourites</button>
+  <button class="tab" onclick="showTab('order')">Order</button>
+  <button class="tab" onclick="showTab('history')">History</button>
+  <button class="tab" onclick="showTab('insights')">Insights</button>
+  <button class="tab" onclick="showTab('circles')">Circles</button>
+</div>
+
+<!-- TONIGHT -->
+<div id="screen-tonight" class="screen active">
+  <div class="card">
+    <div class="section-label" id="circle-section-label">The Family Circle</div>
+    <div class="avatar-row">
+      <div class="av-wrap" onclick="showMemberProfile('You')"><div class="avatar" style="background:var(--teal-light);color:var(--teal-dark)">TS</div><div class="av-online"></div><div class="av-name">You</div></div>
+      <div class="av-wrap" onclick="showMemberProfile('Mr.R')"><div class="avatar" style="background:var(--purple-light);color:var(--purple-dark)">MR</div><div class="av-online"></div><div class="av-name">Mr.R</div></div>
+      <div class="av-wrap" onclick="showMemberProfile('Mrs.V')"><div class="avatar" style="background:var(--coral-light);color:var(--coral-dark)">MV</div><div class="av-online"></div><div class="av-name">Mrs.V</div></div>
+      <div class="av-wrap" onclick="showMemberProfile('Mr.L')"><div class="avatar" style="background:var(--green-light);color:var(--green-dark)">ML</div><div class="av-name">Mr.L</div></div>
+    </div>
+
+    <div class="section-label">Meal type</div>
+    <div class="meal-grid">
+      <div class="meal-btn" onclick="selectMeal(this,'Breakfast')"><span class="meal-emoji">&#9749;</span>Breakfast</div>
+      <div class="meal-btn" onclick="selectMeal(this,'Lunch')"><span class="meal-emoji">&#127822;</span>Lunch</div>
+      <div class="meal-btn active" onclick="selectMeal(this,'Dinner')"><span class="meal-emoji">&#127859;</span>Dinner</div>
+      <div class="meal-btn" onclick="selectMeal(this,'Snacks')"><span class="meal-emoji">&#127839;</span>Snacks</div>
+      <div class="meal-btn" onclick="selectMeal(this,'Midnight munchies')"><span class="meal-emoji">&#127771;</span>Midnight</div>
+      <div class="meal-btn" onclick="selectMeal(this,'Cravings')"><span class="meal-emoji">&#129293;</span>Cravings</div>
+    </div>
+
+    <div class="section-label">Your location</div>
+    <div class="location-row">
+      <input type="text" id="location-input" placeholder="Enter your city or area" value="San Jose, CA" />
+      <button class="loc-btn" onclick="detectLocation(this)">Detect</button>
+    </div>
+
+    <div class="ai-banner">
+      <div class="ai-icon">&#10024;</div>
+      <div class="ai-text" id="ai-banner-text">AI suggestions based on your circle's preferences and past orders. Tap a card to vote!</div>
+    </div>
+    <div class="section-label">AI suggestions &bull; <span id="meal-label-display" style="text-transform:none;font-size:11px;color:var(--teal);font-weight:600;">Dinner</span></div>
+
+    <div id="suggest-cards-container">
+      <div class="suggest-card selected top-voted" id="sc1" onclick="toggleVote(1)">
+        <div class="sc-top">
+          <div><div class="sc-name">Bombay Palace <span class="match-score">94% match</span></div><div class="sc-meta">Indian &bull; 25 min &bull; $$$ &bull; 4.8 stars</div></div>
+          <div class="sc-vote-badge" id="vb1">2 votes &#9650;</div>
+        </div>
+        <div class="tag-row"><span class="tag tag-teal">Mr.R's top pick</span><span class="tag tag-purple">Mrs.V loves Indian</span><span class="tag tag-gray">Vegetarian options</span></div>
+        <div class="voter-row" id="vr1">
+          <div class="voter-chip" style="background:var(--teal-light);color:var(--teal-dark)">TS</div>
+          <div class="voter-chip" style="background:var(--purple-light);color:var(--purple-dark)">MR</div>
+          <span style="font-size:10px;color:var(--text2);">voted</span>
+        </div>
+      </div>
+      <div class="suggest-card" id="sc2" onclick="toggleVote(2)">
+        <div class="sc-top">
+          <div><div class="sc-name">Dragon Noodle House <span class="match-score">81% match</span></div><div class="sc-meta">Chinese &bull; 35 min &bull; $$ &bull; 4.6 stars</div></div>
+          <div class="sc-vote-badge" id="vb2">1 vote</div>
+        </div>
+        <div class="tag-row"><span class="tag tag-teal">Mr.L ordered 3&times;</span><span class="tag tag-gray">Budget-friendly</span></div>
+        <div class="voter-row" id="vr2"><div class="voter-chip" style="background:var(--green-light);color:var(--green-dark)">ML</div><span style="font-size:10px;color:var(--text2);">voted</span></div>
+      </div>
+      <div class="suggest-card" id="sc3" onclick="toggleVote(3)">
+        <div class="sc-top">
+          <div><div class="sc-name">Napoli Pizza Co. <span class="match-score">73% match</span></div><div class="sc-meta">Italian &bull; 20 min &bull; $$ &bull; 4.7 stars</div></div>
+          <div class="sc-vote-badge" id="vb3">0 votes</div>
+        </div>
+        <div class="tag-row"><span class="tag tag-gray">New &amp; highly rated</span><span class="tag tag-gray">Gluten-free available</span></div>
+        <div class="voter-row" id="vr3"><span class="no-votes">No votes yet &mdash; be first!</span></div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="finalizeOrder()">Finalize order &#8594;</button>
+    <button class="btn btn-ghost" onclick="regenerate()">&#10024; Suggest different options</button>
+  </div>
+</div>
+
+<!-- PREFERENCES -->
+<div id="screen-prefs" class="screen">
+  <div class="member-selector">
+    <button class="member-btn active" onclick="selectMember(this,'mr-r')">Mr.R</button>
+    <button class="member-btn" onclick="selectMember(this,'mrs-v')">Mrs.V</button>
+    <button class="member-btn" onclick="selectMember(this,'mr-l')">Mr.L</button>
+    <button class="member-btn" onclick="selectMember(this,'add-member')">+ Add member</button>
+  </div>
+  <div id="prefs-mr-r">
+    <div class="card">
+      <div class="card-title">Mr.R's preferences</div>
+      <div class="card-sub">Learned from 14 past orders</div>
+      <div class="stat-row">
+        <div class="stat-card"><div class="stat-label">Orders together</div><div class="stat-val">14</div></div>
+        <div class="stat-card"><div class="stat-label">Avg spend</div><div class="stat-val">$23</div></div>
+      </div>
+      <div class="pref-block"><div class="section-label">Favourite cuisines</div><div class="chip-row"><div class="chip on">Indian</div><div class="chip on">Thai</div><div class="chip on">Mediterranean</div><div class="chip">Chinese</div><div class="chip">Mexican</div><div class="chip">Italian</div></div></div>
+      <div class="pref-block"><div class="section-label">Dietary</div><div class="chip-row"><div class="chip on">Vegetarian</div><div class="chip">Vegan</div><div class="chip">Gluten-free</div><div class="chip">Halal</div></div></div>
+      <div class="pref-block"><div class="section-label">Avoid</div><div class="chip-row"><div class="chip on">Very spicy</div><div class="chip on">Shellfish</div><div class="chip">Nuts</div></div></div>
+      <div class="section-label" style="margin-top:4px;">AI suggested preferences <span class="tag tag-amber">New</span></div>
+      <div class="ai-suggest-card">
+        <div class="ai-sug-top"><span class="ai-sug-label">&#10024; AI noticed</span></div>
+        <div class="ai-sug-dish">You may also enjoy Lebanese cuisine</div>
+        <div class="ai-sug-reason">Based on your love of Mediterranean &mdash; you've rated hummus and falafel dishes highly</div>
+        <div class="ai-sug-actions"><button class="sug-approve" onclick="approveSuggestion(this,'Lebanese')">Add to preferences</button><button class="sug-skip" onclick="skipSuggestion(this)">Skip</button></div>
+      </div>
+      <div class="ai-suggest-card">
+        <div class="ai-sug-top"><span class="ai-sug-label">&#10024; AI noticed</span></div>
+        <div class="ai-sug-dish">You prefer mild spice levels</div>
+        <div class="ai-sug-reason">8 out of your last 10 orders were rated mild or medium</div>
+        <div class="ai-sug-actions"><button class="sug-approve" onclick="approveSuggestion(this,'Mild spice')">Add to preferences</button><button class="sug-skip" onclick="skipSuggestion(this)">Skip</button></div>
+      </div>
+    </div>
+  </div>
+  <div id="prefs-mrs-v" style="display:none">
+    <div class="card">
+      <div class="card-title">Mrs.V's preferences</div>
+      <div class="card-sub">Learned from 11 past orders</div>
+      <div class="stat-row">
+        <div class="stat-card"><div class="stat-label">Orders together</div><div class="stat-val">11</div></div>
+        <div class="stat-card"><div class="stat-label">Avg spend</div><div class="stat-val">$28</div></div>
+      </div>
+      <div class="pref-block"><div class="section-label">Favourite cuisines</div><div class="chip-row"><div class="chip on">Indian</div><div class="chip on">Chinese</div><div class="chip on">Japanese</div><div class="chip">Thai</div><div class="chip">Italian</div></div></div>
+      <div class="pref-block"><div class="section-label">Dietary</div><div class="chip-row"><div class="chip">Vegetarian</div><div class="chip on">Halal</div><div class="chip">Gluten-free</div></div></div>
+      <div class="section-label" style="margin-top:4px;">AI suggested preferences</div>
+      <div class="ai-suggest-card">
+        <div class="ai-sug-top"><span class="ai-sug-label">&#10024; AI noticed</span></div>
+        <div class="ai-sug-dish">You order East Asian cuisine on weekends most often</div>
+        <div class="ai-sug-reason">76% of your weekend orders are Japanese or Chinese</div>
+        <div class="ai-sug-actions"><button class="sug-approve" onclick="approveSuggestion(this,'Weekend: East Asian')">Add to preferences</button><button class="sug-skip" onclick="skipSuggestion(this)">Skip</button></div>
+      </div>
+    </div>
+  </div>
+  <div id="prefs-mr-l" style="display:none">
+    <div class="card">
+      <div class="card-title">Mr.L's preferences</div>
+      <div class="card-sub">Learned from 12 past orders</div>
+      <div class="stat-row">
+        <div class="stat-card"><div class="stat-label">Orders together</div><div class="stat-val">12</div></div>
+        <div class="stat-card"><div class="stat-label">Avg spend</div><div class="stat-val">$21</div></div>
+      </div>
+      <div class="pref-block"><div class="section-label">Favourite cuisines</div><div class="chip-row"><div class="chip on">Chinese</div><div class="chip on">Thai</div><div class="chip on">Mexican</div><div class="chip">Indian</div><div class="chip">Burgers</div></div></div>
+      <div class="pref-block"><div class="section-label">Dietary</div><div class="chip-row"><div class="chip">Vegetarian</div><div class="chip">Vegan</div><div class="chip">Gluten-free</div></div></div>
+      <div class="section-label" style="margin-top:4px;">AI suggested preferences</div>
+      <div class="ai-suggest-card">
+        <div class="ai-sug-top"><span class="ai-sug-label">&#10024; AI noticed</span></div>
+        <div class="ai-sug-dish">You tend to order large portions</div>
+        <div class="ai-sug-reason">You've added extra sides in 9 out of 12 orders</div>
+        <div class="ai-sug-actions"><button class="sug-approve" onclick="approveSuggestion(this,'Large portions')">Add to preferences</button><button class="sug-skip" onclick="skipSuggestion(this)">Skip</button></div>
+      </div>
+    </div>
+  </div>
+  <div id="prefs-add-member" style="display:none">
+    <div class="invite-card">
+      <div class="invite-title">Invite a new member</div>
+      <div class="invite-privacy">&#128274; Privacy notice: By accepting this invite, this person's food preferences will be visible to all members of the Family Circle. They can leave at any time.</div>
+      <label class="field-label">Name</label><input type="text" placeholder="e.g. Priya" id="invite-name"/>
+      <label class="field-label">Email or phone</label><input type="email" placeholder="priya@email.com" id="invite-email"/>
+      <div class="pref-block" style="margin-top:8px"><div class="section-label">Their cuisines (guess for now)</div><div class="chip-row"><div class="chip">Indian</div><div class="chip">Chinese</div><div class="chip">Italian</div><div class="chip">Thai</div><div class="chip">Mexican</div><div class="chip">Japanese</div></div></div>
+      <button class="btn btn-primary" onclick="sendInvite()" style="margin-top:6px">Send invite</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Pending invites</div>
+      <div id="pending-invites">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border);">
+          <div><div style="font-size:13px;font-weight:500;color:var(--text);">Priya K.</div><div style="font-size:11px;color:var(--text3);">Sent 2 hours ago &bull; Pending</div></div>
+          <span class="tag tag-amber">Awaiting</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FAVOURITES -->
+<div id="screen-favourites" class="screen">
+  <div class="card">
+    <div class="card-title">Order someone's favourite</div>
+    <div class="card-sub">Tap "Order now" to place a direct order for their all-time favourite dish &mdash; no voting needed</div>
+    <div class="fav-card">
+      <div class="fav-left"><div class="avatar" style="background:var(--teal-light);color:var(--teal-dark);width:38px;height:38px;font-size:11px;flex-shrink:0;">TS</div><div><div class="fav-dish">Dal makhani + garlic naan</div><div class="fav-sub">You &bull; Bombay Palace</div></div></div>
+      <button class="fav-order-btn" onclick="orderFavourite('You','Dal makhani + garlic naan')">Order now</button>
+    </div>
+    <div class="fav-card">
+      <div class="fav-left"><div class="avatar" style="background:var(--purple-light);color:var(--purple-dark);width:38px;height:38px;font-size:11px;flex-shrink:0;">MR</div><div><div class="fav-dish">Paneer tikka masala</div><div class="fav-sub">Mr.R &bull; Bombay Palace</div></div></div>
+      <button class="fav-order-btn" onclick="orderFavourite('Mr.R','Paneer tikka masala')">Order now</button>
+    </div>
+    <div class="fav-card">
+      <div class="fav-left"><div class="avatar" style="background:var(--coral-light);color:var(--coral-dark);width:38px;height:38px;font-size:11px;flex-shrink:0;">MV</div><div><div class="fav-dish">Chicken teriyaki bento</div><div class="fav-sub">Mrs.V &bull; Sakura Japanese</div></div></div>
+      <button class="fav-order-btn" onclick="orderFavourite('Mrs.V','Chicken teriyaki bento')">Order now</button>
+    </div>
+    <div class="fav-card">
+      <div class="fav-left"><div class="avatar" style="background:var(--green-light);color:var(--green-dark);width:38px;height:38px;font-size:11px;flex-shrink:0;">ML</div><div><div class="fav-dish">Beef chow mein (extra noodles)</div><div class="fav-sub">Mr.L &bull; Dragon Noodle House</div></div></div>
+      <button class="fav-order-btn" onclick="orderFavourite('Mr.L','Beef chow mein (extra noodles)')">Order now</button>
+    </div>
+    <div id="fav-confirm" style="display:none;margin-top:4px;" class="ai-banner">
+      <div class="ai-icon">&#10003;</div>
+      <div class="ai-text" id="fav-confirm-text">Order placed!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER -->
+<div id="screen-order" class="screen">
+  <div class="predicting-banner" id="predicting-banner">&#10024; AI is predicting everyone's orders based on their history...</div>
+  <div class="confirm-highlight">
+    <div class="confirm-winner" id="order-winner-label">Winner by 2 votes</div>
+    <div class="confirm-rest" id="order-rest-name">Bombay Palace</div>
+    <div class="confirm-eta" id="order-eta">Arriving ~7:45 PM &bull; 25 min</div>
+  </div>
+  <div class="card">
+    <div class="section-label">Payment method</div>
+    <div class="payment-row">
+      <div class="pay-btn active" id="pay-ts" onclick="selectPayment('ts')">&#128176; TS pays<br><span style="font-size:10px;opacity:0.7;">Full bill</span></div>
+      <div class="pay-btn" id="pay-split" onclick="selectPayment('split')">&#129300; Split equally<br><span style="font-size:10px;opacity:0.7;">Each pays own</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-label">Everyone's predicted order</div>
+    <div class="order-item">
+      <div class="oi-left"><div class="voter-chip" style="background:var(--teal-light);color:var(--teal-dark)">TS</div><div><div class="oi-name">You</div><div class="oi-dish" id="dish-you">Dal makhani + naan</div></div></div>
+      <div style="display:flex;align-items:center;gap:5px;"><span class="ai-predicted" id="badge-you" style="display:none">AI predicted</span><div class="oi-price">$22</div></div>
+    </div>
+    <div class="order-item">
+      <div class="oi-left"><div class="voter-chip" style="background:var(--purple-light);color:var(--purple-dark)">MR</div><div><div class="oi-name">Mr.R</div><div class="oi-dish" id="dish-mr">Paneer tikka masala</div></div></div>
+      <div style="display:flex;align-items:center;gap:5px;"><span class="ai-predicted" id="badge-mr" style="display:none">AI predicted</span><div class="oi-price">$24</div></div>
+    </div>
+    <div class="order-item">
+      <div class="oi-left"><div class="voter-chip" style="background:var(--coral-light);color:var(--coral-dark)">MV</div><div><div class="oi-name">Mrs.V</div><div class="oi-dish" id="dish-mv">Lamb rogan josh</div></div></div>
+      <div style="display:flex;align-items:center;gap:5px;"><span class="ai-predicted" id="badge-mv" style="display:none">AI predicted</span><div class="oi-price">$27</div></div>
+    </div>
+    <div class="order-item">
+      <div class="oi-left"><div class="voter-chip" style="background:var(--green-light);color:var(--green-dark)">ML</div><div><div class="oi-name">Mr.L</div><div class="oi-dish" id="dish-ml">Chicken biryani</div></div></div>
+      <div style="display:flex;align-items:center;gap:5px;"><span class="ai-predicted" id="badge-ml" style="display:none">AI predicted</span><div class="oi-price">$23</div></div>
+    </div>
+    <div style="border-top:0.5px solid var(--border);margin-top:4px">
+      <div class="split-row"><span class="split-label">Subtotal</span><span class="split-val">$96.00</span></div>
+      <div class="split-row"><span class="split-label">Delivery + tip</span><span class="split-val">$12.00</span></div>
+      <div class="split-row" style="padding-top:8px;border-top:0.5px solid var(--border);margin-top:6px">
+        <span class="split-label" style="font-weight:600;color:var(--text)" id="payment-label">TS covers the bill</span>
+        <span class="split-val" style="color:var(--teal);font-size:17px" id="payment-amount">$108.00</span>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-primary">Place order &#8594;</button>
+  <button class="btn btn-ghost" onclick="showTab('tonight')">&#8592; Back to voting</button>
+</div>
+
+<!-- HISTORY -->
+<div id="screen-history" class="screen">
+  <div class="card">
+    <div class="card-title">Past orders</div>
+    <div class="card-sub">14 orders together &bull; $1,240 total spent</div>
+    <div class="history-row"><div><div class="hist-name">Bombay Palace</div><div class="hist-date">Last Friday &bull; 4 people &bull; $96 &bull; Mr.R picked Dal makhani</div></div><div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div></div>
+    <div class="history-row"><div><div class="hist-name">Dragon Noodle House</div><div class="hist-date">2 weeks ago &bull; 3 people &bull; $68 &bull; Mr.L picked Beef chow mein</div></div><div class="stars">&#9733;&#9733;&#9733;&#9733;&#9734;</div></div>
+    <div class="history-row"><div><div class="hist-name">Napoli Pizza Co.</div><div class="hist-date">3 weeks ago &bull; 4 people &bull; $82 &bull; You picked Margherita pizza</div></div><div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div></div>
+    <div class="history-row"><div><div class="hist-name">Thai Orchid</div><div class="hist-date">Last month &bull; 2 people &bull; $54 &bull; Mrs.V picked Tom kha soup</div></div><div class="stars">&#9733;&#9733;&#9733;&#9734;&#9734;</div></div>
+    <div class="history-row"><div><div class="hist-name">Sakura Japanese</div><div class="hist-date">6 weeks ago &bull; 4 people &bull; $112 &bull; Mrs.V picked Miso ramen</div></div><div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div></div>
+    <div class="history-row"><div><div class="hist-name">Bombay Palace</div><div class="hist-date">7 weeks ago &bull; 4 people &bull; $91 &bull; Mr.R picked Paneer tikka masala</div></div><div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div></div>
+    <div class="history-row"><div><div class="hist-name">Casa Mexico</div><div class="hist-date">2 months ago &bull; 3 people &bull; $74 &bull; Mr.L picked Tacos al pastor</div></div><div class="stars">&#9733;&#9733;&#9733;&#9733;&#9734;</div></div>
+  </div>
+</div>
+
+<!-- INSIGHTS -->
+<div id="screen-insights" class="screen">
+  <div class="card">
+    <div class="card-title">Group cuisine preferences</div>
+    <div class="card-sub">Likelihood of each person enjoying a cuisine type</div>
+    <canvas id="barChart" height="220"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Individual taste profiles</div>
+    <div class="card-sub">Tap a member to see their radar chart</div>
+    <div class="member-selector">
+      <button class="member-btn active" onclick="selectRadar(this,'You')">You</button>
+      <button class="member-btn" onclick="selectRadar(this,'Mr.R')">Mr.R</button>
+      <button class="member-btn" onclick="selectRadar(this,'Mrs.V')">Mrs.V</button>
+      <button class="member-btn" onclick="selectRadar(this,'Mr.L')">Mr.L</button>
+    </div>
+    <canvas id="radarChart" height="260"></canvas>
+    <div id="radar-insight" style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.6;background:var(--bg2);border-radius:var(--radius-sm);padding:10px 12px;"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Circle overlap</div>
+    <div class="card-sub">Cuisines everyone scores above 60% &mdash; your safe bets</div>
+    <div id="overlap-tags" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;"></div>
+  </div>
+</div>
+
+<!-- CREATE CIRCLE SCREEN -->
+<div id="screen-create-circle" class="screen">
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <button onclick="showTab('tonight')" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-pill);padding:5px 12px;font-size:12px;color:var(--text2);cursor:pointer;">&#8592; Back</button>
+      <div class="card-title" style="margin-bottom:0">Create new circle</div>
+    </div>
+    <label class="field-label">Circle name</label>
+    <input type="text" id="create-circle-name" placeholder="e.g. Book Club, College Friends, Work Crew" />
+    <div class="pref-block" style="margin-top:8px;">
+      <div class="section-label">Invite first member</div>
+      <div class="invite-privacy">&#128274; Privacy notice: Members you invite will be shown that their food preferences will be visible to everyone in this circle before they accept.</div>
+      <label class="field-label">Name</label>
+      <input type="text" placeholder="Member name" id="create-member-name" />
+      <label class="field-label">Email or phone</label>
+      <input type="email" placeholder="their@email.com" id="create-member-email" />
+    </div>
+    <button class="btn btn-primary" onclick="createCircleFromScreen()">Create circle &amp; send invite</button>
+    <button class="btn btn-ghost" onclick="showTab('tonight')">Cancel</button>
+  </div>
+</div>
+
+<!-- CIRCLES -->
+<div id="screen-circles" class="screen">
+  <div class="card">
+    <div class="card-title">My circles</div>
+    <div class="card-sub">Tap a circle to switch to it</div>
+    <div class="circle-card active-circle" onclick="switchCircle(this,'Family Circle','4 members')">
+      <div><div class="circle-name">Family Circle</div><div class="circle-meta">4 members &bull; 14 orders together</div></div>
+      <div class="circle-check">&#10003;</div>
+    </div>
+    <div class="circle-card" onclick="switchCircle(this,'Work Crew','3 members')">
+      <div><div class="circle-name">Work Crew</div><div class="circle-meta">3 members &bull; 5 orders together</div></div>
+      <div class="circle-check">&#10003;</div>
+    </div>
+    <div class="circle-card" onclick="switchCircle(this,'Weekend Friends','6 members')">
+      <div><div class="circle-name">Weekend Friends</div><div class="circle-meta">6 members &bull; 8 orders together</div></div>
+      <div class="circle-check">&#10003;</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Create new circle</div>
+    <label class="field-label">Circle name</label>
+    <input type="text" id="new-circle-name" placeholder="e.g. Book Club, College Friends" />
+    <div class="pref-block" style="margin-top:4px;">
+      <div class="section-label">Add first member</div>
+      <label class="field-label">Name</label><input type="text" placeholder="Member name" id="new-member-name" />
+      <label class="field-label">Email or phone</label><input type="email" placeholder="their@email.com" id="new-member-email" />
+    </div>
+    <button class="btn btn-primary" onclick="createCircle()">Create circle &amp; send invite</button>
+  </div>
+</div>
+
+<script>
+var votes = {1:2, 2:1, 3:0};
+var myVote = {1:true, 2:false, 3:false};
+var currentMealType = 'Dinner';
+var currentPayment = 'ts';
+var ANTHROPIC_API_KEY = sessionStorage.getItem('anthropic_key') || '';
+
+function showTab(name) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  var s = document.getElementById('screen-' + name);
+  if (s) s.classList.add('active');
+  var tabMap = {tonight:0,prefs:1,favourites:2,order:3,history:4,insights:5,circles:6,'create-circle':null};
+  var tabs = document.querySelectorAll('.tab');
+  if (tabMap[name] !== undefined && tabs[tabMap[name]]) tabs[tabMap[name]].classList.add('active');
+  if (name === 'insights') setTimeout(drawCharts, 100);
+}
+
+function selectMeal(btn, type) {
+  document.querySelectorAll('.meal-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  currentMealType = type;
+  document.getElementById('meal-label-display').textContent = type;
+  document.getElementById('ai-banner-text').textContent = 'AI suggestions for ' + type + ' based on your circle\'s preferences. Tap a card to vote!';
+}
+
+function detectLocation(btn) {
+  btn.textContent = 'Detecting...';
+  setTimeout(function(){
+    document.getElementById('location-input').value = 'San Jose, CA';
+    btn.textContent = 'Detect';
+  }, 1200);
+}
+
+function toggleVote(n) {
+  if (myVote[n]) { myVote[n]=false; votes[n]--; document.getElementById('sc'+n).classList.remove('selected'); }
+  else { myVote[n]=true; votes[n]++; document.getElementById('sc'+n).classList.add('selected'); }
+  var v = votes[n];
+  document.getElementById('vb'+n).innerHTML = v+(v===1?' vote':' votes')+(v>=2?' &#9650;':'');
+  rerankCards();
+}
+
+function rerankCards() {
+  var container = document.getElementById('suggest-cards-container');
+  var cards = [{el:document.getElementById('sc1'),votes:votes[1]},{el:document.getElementById('sc2'),votes:votes[2]},{el:document.getElementById('sc3'),votes:votes[3]}];
+  cards.sort(function(a,b){ return b.votes-a.votes; });
+  cards.forEach(function(c,i){
+    c.el.classList.remove('top-voted');
+    if (i===0 && c.votes>0) c.el.classList.add('top-voted');
+    container.appendChild(c.el);
+  });
+}
+
+function selectMember(btn, id) {
+  document.querySelectorAll('#screen-prefs .member-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  ['mr-r','mrs-v','mr-l','add-member'].forEach(function(m){
+    var el = document.getElementById('prefs-'+m);
+    if (el) el.style.display = m===id?'block':'none';
+  });
+}
+
+function approveSuggestion(btn, label) {
+  var card = btn.closest('.ai-suggest-card');
+  card.style.background = 'var(--teal-light)';
+  card.querySelector('.ai-sug-dish').style.color = 'var(--teal-dark)';
+  btn.textContent = 'Added!'; btn.disabled = true;
+  setTimeout(function(){ card.style.display='none'; }, 800);
+}
+
+function skipSuggestion(btn) {
+  var card = btn.closest('.ai-suggest-card');
+  card.style.opacity = '0.4';
+  setTimeout(function(){ card.style.display='none'; }, 400);
+}
+
+function selectPayment(type) {
+  currentPayment = type;
+  document.getElementById('pay-ts').classList.toggle('active', type==='ts');
+  document.getElementById('pay-split').classList.toggle('active', type==='split');
+  document.getElementById('payment-label').textContent = type==='ts' ? 'TS covers the bill' : 'Each person pays';
+  document.getElementById('payment-amount').textContent = type==='ts' ? '$108.00' : '$27.00';
+}
+
+function orderFavourite(person, dish) {
+  var conf = document.getElementById('fav-confirm');
+  document.getElementById('fav-confirm-text').textContent = 'Order placed for ' + person + ': ' + dish + '. Estimated arrival in 25-35 min!';
+  conf.style.display = 'flex';
+  setTimeout(function(){ conf.style.display='none'; }, 4000);
+}
+
+function showMemberProfile(name) {
+  var map = {'Mr.R':'mr-r','Mrs.V':'mrs-v','Mr.L':'mr-l'};
+  if (map[name]) {
+    showTab('prefs');
+    setTimeout(function(){
+      ['mr-r','mrs-v','mr-l','add-member'].forEach(function(m){
+        var el = document.getElementById('prefs-'+m);
+        if (el) el.style.display = m===map[name]?'block':'none';
+      });
+      document.querySelectorAll('#screen-prefs .member-btn').forEach(function(b){
+        b.classList.toggle('active', b.textContent.trim()===name);
+      });
+    }, 50);
+  }
+}
+
+function sendInvite() {
+  var name = document.getElementById('invite-name').value;
+  var email = document.getElementById('invite-email').value;
+  if (!name||!email) { alert('Please enter a name and email.'); return; }
+  var row = document.createElement('div');
+  row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border);';
+  row.innerHTML = '<div><div style="font-size:13px;font-weight:500;color:var(--text);">'+name+'</div><div style="font-size:11px;color:var(--text3);">Just sent &bull; Pending</div></div><span class="tag tag-amber">Awaiting</span>';
+  document.getElementById('pending-invites').appendChild(row);
+  document.getElementById('invite-name').value='';
+  document.getElementById('invite-email').value='';
+  alert('Invite sent to '+email+'!\n\nThey will see a privacy notice before joining the circle.');
+}
+
+function switchCircle(card, name, meta) {
+  document.querySelectorAll('.circle-card').forEach(function(c){ c.classList.remove('active-circle'); });
+  card.classList.add('active-circle');
+  document.getElementById('active-circle-name').textContent = name;
+  document.getElementById('app-tagline').textContent = meta + ' \u2022 ' + currentMealType + ' tonight';
+  document.getElementById('circle-section-label').textContent = 'The ' + name;
+  showTab('tonight');
+}
+
+function createCircle() {
+  var name = document.getElementById('new-circle-name').value;
+  if (!name) { alert('Please enter a circle name.'); return; }
+  var card = document.createElement('div');
+  card.className = 'circle-card';
+  card.innerHTML = '<div><div class="circle-name">'+name+'</div><div class="circle-meta">1 member &bull; 0 orders</div></div><div class="circle-check">&#10003;</div>';
+  card.onclick = function(){ switchCircle(card, name, '1 member'); };
+  var circlesCard = document.querySelector('#screen-circles .card');
+  circlesCard.insertBefore(card, circlesCard.querySelector('.card-title').nextSibling.nextSibling);
+  document.getElementById('new-circle-name').value='';
+  document.getElementById('new-member-name').value='';
+  document.getElementById('new-member-email').value='';
+  switchCircle(card, name, '1 member');
+}
+
+function toggleDropdown(e) {
+  e.stopPropagation();
+  var dd = document.getElementById('circle-dropdown');
+  dd.classList.toggle('hidden');
+  document.getElementById('dd-arrow').innerHTML = dd.classList.contains('hidden') ? '&#9660;' : '&#9650;';
+}
+
+document.addEventListener('click', function(e) {
+  var dd = document.getElementById('circle-dropdown');
+  if (!dd.classList.contains('hidden')) {
+    dd.classList.add('hidden');
+    document.getElementById('dd-arrow').innerHTML = '&#9660;';
+  }
+});
+
+function switchCircleDropdown(item, name, meta, orders) {
+  document.querySelectorAll('.dropdown-item .dd-check').forEach(function(c){ c.style.display='none'; });
+  document.querySelectorAll('.dropdown-item').forEach(function(d){ d.classList.remove('active-item'); });
+  item.classList.add('active-item');
+  item.querySelector('.dd-check').style.display='inline';
+  document.getElementById('active-circle-name').textContent = name;
+  document.getElementById('app-tagline').textContent = meta + ' • ' + currentMealType + ' tonight';
+  document.getElementById('circle-section-label').textContent = 'The ' + name;
+  document.querySelectorAll('.circle-card').forEach(function(c){
+    c.classList.toggle('active-circle', c.querySelector('.circle-name').textContent === name);
+  });
+  var dd = document.getElementById('circle-dropdown');
+  dd.classList.add('hidden');
+  document.getElementById('dd-arrow').innerHTML = '&#9660;';
+  showTab('tonight');
+}
+
+function openCreateCircle() {
+  var dd = document.getElementById('circle-dropdown');
+  dd.classList.add('hidden');
+  document.getElementById('dd-arrow').innerHTML = '&#9660;';
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById('screen-create-circle').classList.add('active');
+}
+
+function createCircleFromScreen() {
+  var name = document.getElementById('create-circle-name').value;
+  if (!name) { alert('Please enter a circle name.'); return; }
+  var memberName = document.getElementById('create-member-name').value;
+  var memberEmail = document.getElementById('create-member-email').value;
+  // Add to dropdown
+  var dd = document.getElementById('circle-dropdown');
+  var newItem = document.createElement('div');
+  newItem.className = 'dropdown-item';
+  newItem.innerHTML = '<div><div>'+name+'</div><div class="dd-meta">1 member &bull; 0 orders</div></div><span class="dd-check" style="display:none">&#10003;</span>';
+  newItem.onclick = function(){ switchCircleDropdown(newItem, name, '1 member', 0); };
+  dd.insertBefore(newItem, document.getElementById('dd-new-circle'));
+  // Add to circles screen too
+  var card = document.createElement('div');
+  card.className = 'circle-card';
+  card.innerHTML = '<div><div class="circle-name">'+name+'</div><div class="circle-meta">1 member &bull; 0 orders</div></div><div class="circle-check">&#10003;</div>';
+  card.onclick = function(){ switchCircle(card, name, '1 member'); };
+  var circlesCard = document.querySelector('#screen-circles .card');
+  circlesCard.insertBefore(card, circlesCard.querySelectorAll('.circle-card')[circlesCard.querySelectorAll('.circle-card').length]);
+  document.getElementById('create-circle-name').value='';
+  document.getElementById('create-member-name').value='';
+  document.getElementById('create-member-email').value='';
+  if (memberEmail) alert('Invite sent to '+memberEmail+'!\n\nThey will see a privacy notice before joining.');
+  switchCircleDropdown(newItem, name, '1 member', 0);
+}
+
+function checkKey() {
+  if (!ANTHROPIC_API_KEY) {
+    var key = prompt('Enter your Anthropic API key to enable AI features:\n(Stored in browser session only - never saved to GitHub)');
+    if (key) { ANTHROPIC_API_KEY=key.trim(); sessionStorage.setItem('anthropic_key',ANTHROPIC_API_KEY); }
+  }
+}
+
+async function callClaude(prompt, maxTokens) {
+  var r = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:maxTokens||1000,messages:[{role:'user',content:prompt}]})
+  });
+  var d = await r.json();
+  return d.content[0].text.trim().replace(/```json|```/g,'').trim();
+}
+
+async function regenerate() {
+  checkKey(); if (!ANTHROPIC_API_KEY) return;
+  var btn = document.querySelector('#screen-tonight .btn-ghost');
+  btn.textContent='AI is thinking...'; btn.disabled=true;
+  var location = document.getElementById('location-input').value||'San Jose, CA';
+  var prefs = {'Mr.R':'Indian, Thai, Mediterranean. Vegetarian. Avoids very spicy and shellfish.','Mrs.V':'Indian, Chinese, Japanese. Halal.','Mr.L':'Chinese, Thai, Mexican. No restrictions.','You':'Flexible, enjoys variety.'};
+  var p = 'You are a food ordering assistant. Circle ordering '+currentMealType+' in '+location+'.\nPreferences:\n'+JSON.stringify(prefs,null,2)+'\n\nSuggest 3 local restaurants. For each: name, cuisine, time (e.g. "25 min"), price ($ to $$$), stars (4.0-5.0), reason (short), matchScore (0-100).\nJSON array only:\n[{"name":"","cuisine":"","time":"","price":"","stars":"","reason":"","matchScore":0}]';
+  try {
+    var text = await callClaude(p,1000);
+    var suggestions = JSON.parse(text);
+    var cards = document.querySelectorAll('.suggest-card');
+    suggestions.forEach(function(s,i){
+      if (cards[i]) {
+        cards[i].querySelector('.sc-name').innerHTML = s.name+' <span class="match-score">'+s.matchScore+'% match</span>';
+        cards[i].querySelector('.sc-meta').textContent = s.cuisine+' \u00b7 '+s.time+' \u00b7 '+s.price+' \u00b7 '+s.stars+' stars';
+        cards[i].querySelector('.tag-row').innerHTML = '<span class="tag tag-teal">'+s.reason+'</span>';
+        cards[i].querySelector('.voter-row').innerHTML = '<span class="no-votes">No votes yet</span>';
+        cards[i].classList.remove('selected','top-voted');
+        votes[i+1]=0; myVote[i+1]=false;
+        document.getElementById('vb'+(i+1)).textContent='0 votes';
+      }
+    });
+  } catch(err) { alert('Could not load suggestions. Check your API key and try again.'); console.error(err); }
+  btn.textContent='\u2728 Suggest different options'; btn.disabled=false;
+}
+
+var orderHistory = {
+  'You':{dishes:['Dal makhani','Butter chicken','Pad Thai','Margherita pizza','Tom yum soup','Garlic naan','Chicken tikka']},
+  'Mr.R':{dishes:['Paneer tikka masala','Vegetable biryani','Palak paneer','Aloo gobi','Chana masala','Vegetable pad thai','Falafel wrap']},
+  'Mrs.V':{dishes:['Lamb rogan josh','Chicken teriyaki','Dim sum platter','Kung pao chicken','Miso ramen','Peking duck','Gyoza']},
+  'Mr.L':{dishes:['Chicken biryani','Beef chow mein','Pad see ew','Tacos al pastor','Spring rolls','Fried rice','Burrito bowl']}
+};
+
+async function finalizeOrder() {
+  checkKey(); if (!ANTHROPIC_API_KEY) { showTab('order'); return; }
+  var banner = document.getElementById('predicting-banner');
+  banner.classList.add('show'); showTab('order');
+  var selected = document.querySelector('.suggest-card.selected');
+  var restName = selected ? selected.querySelector('.sc-name').textContent.replace(/\d+% match/,'').trim() : 'Bombay Palace';
+  document.getElementById('order-rest-name').textContent = restName;
+  var winnerVotes = Math.max(votes[1],votes[2],votes[3]);
+  document.getElementById('order-winner-label').textContent = 'Winner by '+winnerVotes+' vote'+(winnerVotes===1?'':'s');
+  var p = 'Predict what each person will order from '+restName+' based on their history.\n';
+  for (var person in orderHistory) { p += person+': '+orderHistory[person].dishes.join(', ')+'\n'; }
+  p += '\nReturn JSON only: {"You":"dish","Mr.R":"dish","Mrs.V":"dish","Mr.L":"dish"}';
+  try {
+    var text = await callClaude(p,500);
+    var predictions = JSON.parse(text);
+    document.getElementById('dish-you').textContent = predictions['You']||'Dal makhani + naan';
+    document.getElementById('dish-mr').textContent = predictions['Mr.R']||'Paneer tikka masala';
+    document.getElementById('dish-mv').textContent = predictions['Mrs.V']||'Lamb rogan josh';
+    document.getElementById('dish-ml').textContent = predictions['Mr.L']||'Chicken biryani';
+    ['you','mr','mv','ml'].forEach(function(id){ document.getElementById('badge-'+id).style.display='inline'; });
+  } catch(err) { console.error('Prediction error:',err); }
+  banner.classList.remove('show');
+}
+
+document.querySelectorAll('.chip').forEach(function(chip){
+  chip.addEventListener('click',function(){ this.classList.toggle('on'); });
+});
+
+var insightData = {
+  'You':{Indian:90,Thai:85,Italian:75,Chinese:60,Japanese:55,Mexican:50,Mediterranean:65},
+  'Mr.R':{Indian:95,Thai:70,Italian:40,Chinese:45,Japanese:50,Mexican:30,Mediterranean:80},
+  'Mrs.V':{Indian:80,Thai:50,Italian:35,Chinese:90,Japanese:95,Mexican:25,Mediterranean:40},
+  'Mr.L':{Indian:60,Thai:85,Italian:45,Chinese:95,Japanese:40,Mexican:90,Mediterranean:35}
+};
+var radarInsights = {
+  'You':'You have broad tastes with a strong lean toward Indian and Thai. You are the most flexible member of the circle — great for breaking ties!',
+  'Mr.R':'Mr.R strongly prefers Indian and Mediterranean. Almost exclusively vegetarian. Least likely to enjoy Chinese or Mexican.',
+  'Mrs.V':'Mrs.V is the Japanese and Chinese champion of the circle. High confidence on East Asian cuisines, less adventurous with Mexican.',
+  'Mr.L':'Mr.L is the most diverse eater — Chinese, Mexican and Thai all score above 85%. He is rarely unhappy with a suggestion.'
+};
+var cuisines = ['Indian','Thai','Italian','Chinese','Japanese','Mexican','Mediterranean'];
+var members = ['You','Mr.R','Mrs.V','Mr.L'];
+var memberColors = ['#1D9E75','#7F77DD','#D85A30','#639922'];
+var memberColorsAlpha = ['rgba(29,158,117,0.15)','rgba(127,119,221,0.15)','rgba(216,90,48,0.15)','rgba(99,153,34,0.15)'];
+var barChartInstance=null, radarChartInstance=null;
+
+function drawCharts(){ drawBarChart(); drawRadarChart('You'); drawOverlapTags(); }
+
+function drawBarChart(){
+  var ctx = document.getElementById('barChart').getContext('2d');
+  if (barChartInstance) barChartInstance.destroy();
+  barChartInstance = new Chart(ctx,{type:'bar',data:{labels:cuisines,datasets:members.map(function(m,i){return{label:m,data:cuisines.map(function(c){return insightData[m][c];}),backgroundColor:memberColorsAlpha[i],borderColor:memberColors[i],borderWidth:1.5,borderRadius:4};})},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:10}},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y+'%';}}}} ,scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{min:0,max:100,ticks:{font:{size:10},callback:function(v){return v+'%';}},grid:{color:'rgba(0,0,0,0.05)'}}}}});
+}
+
+function drawRadarChart(member){
+  var ctx = document.getElementById('radarChart').getContext('2d');
+  if (radarChartInstance) radarChartInstance.destroy();
+  var idx = members.indexOf(member);
+  radarChartInstance = new Chart(ctx,{type:'radar',data:{labels:cuisines,datasets:[{label:member,data:cuisines.map(function(c){return insightData[member][c];}),backgroundColor:memberColorsAlpha[idx],borderColor:memberColors[idx],borderWidth:2,pointBackgroundColor:memberColors[idx],pointRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{r:{min:0,max:100,ticks:{stepSize:25,font:{size:9},callback:function(v){return v+'%';}},pointLabels:{font:{size:11}},grid:{color:'rgba(0,0,0,0.07)'}}}}});
+  document.getElementById('radar-insight').textContent = radarInsights[member];
+}
+
+function selectRadar(btn, member){
+  document.querySelectorAll('#screen-insights .member-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active'); drawRadarChart(member);
+}
+
+function drawOverlapTags(){
+  var overlap = cuisines.filter(function(c){ return members.every(function(m){ return insightData[m][c]>=60; }); });
+  var container = document.getElementById('overlap-tags');
+  container.innerHTML='';
+  if (!overlap.length){ container.innerHTML='<span style="font-size:13px;color:var(--text2)">No cuisines score above 60% for all members</span>'; return; }
+  overlap.forEach(function(c){ var tag=document.createElement('span'); tag.className='tag tag-teal'; tag.style.cssText='font-size:13px;padding:5px 14px;'; tag.textContent=c; container.appendChild(tag); });
+}
+</script>
+</body>
+</html>
